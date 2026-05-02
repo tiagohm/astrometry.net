@@ -58,6 +58,7 @@ CFLAGS += -I$(ANUTILS_DIR)
 # wcs-resample.h
 CFLAGS += -I.
 CFLAGS += $(CFITS_INC)
+CFLAGS += -mno-avx512f -mno-avx512vl
 
 SHAREDLIBFLAGS := $(SHAREDLIBFLAGS_DEF)
 
