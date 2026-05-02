@@ -4,8 +4,8 @@
  */
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 
+#include "mmap-compat.h"
 #include "usnob-fits.h"
 #include "usnob.h"
 #include "starutil.h"
@@ -118,5 +118,4 @@ int main(int argc, char** args) {
     }
     return 0;
 }
-
 

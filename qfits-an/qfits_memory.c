@@ -39,11 +39,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/mman.h>
 #include <sys/resource.h>
 #include <errno.h>
 #include <assert.h>
 
+#include "mmap-compat.h"
 #include "qfits_error.h"
 
 /*-----------------------------------------------------------------------------

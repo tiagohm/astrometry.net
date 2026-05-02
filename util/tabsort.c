@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 
+#include "mmap-compat.h"
 #include "anqfits.h"
 #include "ioutils.h"
 #include "fitsioutils.h"
@@ -191,4 +191,3 @@ int tabsort(const char* infn, const char* outfn, const char* colname,
         munmap(map, mapsize);
     return -1;
 }
-

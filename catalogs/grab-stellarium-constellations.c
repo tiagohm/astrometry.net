@@ -7,11 +7,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <unistd.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <string.h>
 #include <ctype.h>
 
+#include "mmap-compat.h"
 #include "starutil.h"
 #include "bl.h"
 #include "mathutil.h"

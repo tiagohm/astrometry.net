@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 
 #include "fitstable.h"
 #include "anqfits.h"
@@ -105,4 +104,3 @@ int cut_table(const char* infn, const char* outfn, int N) {
     //fitstable_close(out);
     return 0;
 }
-

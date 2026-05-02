@@ -9,9 +9,6 @@
 #include <string.h>
 #include <assert.h>
 
-// DEBUG
-#include <sys/mman.h>
-
 #include "anqfits.h"
 #include "ioutils.h"
 #include "fitsioutils.h"
@@ -207,5 +204,4 @@ int resort_xylist(const char* infn, const char* outfn,
     free(used);
     return -1;
 }
-
 

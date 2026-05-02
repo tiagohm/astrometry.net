@@ -14,8 +14,8 @@
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
-#include <sys/mman.h>
 
+#include "mmap-compat.h"
 #include "anqfits.h"
 #include "qfits_std.h"
 #include "qfits_error.h"
@@ -1280,7 +1280,6 @@ void* anqfits_readpix(const anqfits_t* qf, int ext,
     }
     return NULL;
 }
-
 
 
 

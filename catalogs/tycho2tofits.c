@@ -9,9 +9,9 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <assert.h>
 
+#include "mmap-compat.h"
 #include "tycho2.h"
 #include "tycho2-fits.h"
 #include "starutil.h"
@@ -228,4 +228,3 @@ int main(int argc, char** args) {
     free(tycs);
     return 0;
 }
-

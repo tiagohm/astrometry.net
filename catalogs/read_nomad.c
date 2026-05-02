@@ -9,15 +9,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <endian.h>
 #include <netinet/in.h>
 #include <byteswap.h>
 
+#include "mmap-compat.h"
 #include "nomad.h"
 
 int main(int argc, char** args) {
@@ -73,8 +74,8 @@ int main(int argc, char** args) {
 
             printf("%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g ",
                    e.ra, e.dec, e.sigma_racosdec, e.sigma_dec,
-                   e.mu_racosdec, e.mu_dec, e.sigma_mu_racosdec,
-                   e.sigma_mu_dec, e.epoch_ra, e.epoch_dec, e.mag_B,
+                   e.pm_racosdec, e.pm_dec, e.sigma_pm_racosdec,
+                   e.sigma_pm_dec, e.epoch_ra, e.epoch_dec, e.mag_B,
                    e.mag_V, e.mag_R, e.mag_J, e.mag_H, e.mag_K);
             printf("%u %u %u %u %u %i %i %i %i ",
                    e.usnob_id, e.twomass_id, e.yb6_id, e.ucac2_id,
@@ -83,12 +84,12 @@ int main(int argc, char** args) {
             printf("%i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i %i\n",
                    (int)e.usnob_fail, (int)e.twomass_fail,
                    (int)e.tycho_astrometry, (int)e.alt_radec,
-                   (int)e.alt_2mass, (int)e.alt_ucac, (int)e.alt_tycho,
+                   0, (int)e.alt_ucac, (int)e.alt_tycho,
                    (int)e.blue_o, (int)e.red_e, (int)e.twomass_only,
                    (int)e.hipp_astrometry, (int)e.diffraction,
                    (int)e.confusion, (int)e.bright_confusion,
                    (int)e.bright_artifact, (int)e.standard,
-                   (int)e.external);
+                   0);
         }
 
         munmap(map, map_size);

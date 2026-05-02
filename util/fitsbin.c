@@ -6,10 +6,10 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <string.h>
 #include <assert.h>
 
+#include "mmap-compat.h"
 #include "keywords.h"
 #include "fitsbin.h"
 #include "fitsioutils.h"
@@ -619,4 +619,3 @@ fitsbin_t* fitsbin_open_for_writing(const char* fn) {
     }
     return fb;
 }
-

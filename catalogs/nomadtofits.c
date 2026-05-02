@@ -10,9 +10,9 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <assert.h>
 
+#include "mmap-compat.h"
 #include "nomad.h"
 #include "nomad-fits.h"
 #include "qfits_header.h"
@@ -216,4 +216,3 @@ int main(int argc, char** args) {
 
     return 0;
 }
-

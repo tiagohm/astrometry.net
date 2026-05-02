@@ -10,11 +10,11 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <assert.h>
 
+#include "mmap-compat.h"
 #include "usnob.h"
 #include "anqfits.h"
 #include "healpix.h"

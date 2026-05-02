@@ -26,6 +26,7 @@
 #include <time.h>
 
 #include "os-features.h"
+#include "mmap-compat.h"
 #include "ioutils.h"
 #include "errors.h"
 #include "log.h"

@@ -129,7 +129,7 @@ ANUTILS_H := an-bool.h an-endian.h an-opts.h an-thread-pthreads.h \
 	fitstable.h os-features-config.h os-features.h gslutils.h \
 	healpix-utils.h healpix.h index.h intmap.h ioutils.h fileutils.h \
 	keywords.h log.h \
-	mathutil.h permutedsort.h qidxfile.h quadfile.h rdlist.h scamp-catalog.h \
+	mathutil.h mmap-compat.h permutedsort.h qidxfile.h quadfile.h rdlist.h scamp-catalog.h \
 	fit-wcs.h sip-utils.h sip.h sip_qfits.h starkd.h starutil.h starutil.inc \
 	starxy.h tic.h \
 	xylist.h coadd.h convolve-image.h resample.h multiindex.h scamp.h \

@@ -10,9 +10,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
 #include <fcntl.h>
 
+#include "mmap-compat.h"
 #include "solvedfile.h"
 #include "errors.h"
 
@@ -294,4 +294,3 @@ int solvedfile_set(char* fn, int fieldnum) {
     }
     return 0;
 }
-
