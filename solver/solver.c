@@ -1712,3 +1712,42 @@ void solver_free(solver_t* solver) {
     solver_cleanup(solver);
     free(solver);
 }
+
+void solver_set_scale_range(solver_t *s, double funits_lower, double funits_upper) {
+	s->funits_lower = funits_lower;
+	s->funits_upper = funits_upper;
+}
+
+void solver_set_tweak_order(solver_t *s, int enabled, int aborder, int abporder) {
+	s->do_tweak = enabled != 0;
+	s->tweak_aborder = aborder;
+	s->tweak_abporder = abporder;
+}
+
+void solver_set_crpix(solver_t *s, double x, double y) {
+	s->set_crpix = 1;
+	s->set_crpix_center = 0;
+	s->crpix[0] = x;
+	s->crpix[1] = y;
+}
+
+void solver_set_crpix_center(solver_t *s, int enabled) {
+	s->set_crpix = enabled != 0;
+	s->set_crpix_center = enabled != 0;
+}
+
+void solver_set_verify_pix(solver_t *s, double verify_pix) {
+	s->verify_pix = verify_pix;
+}
+
+void solver_set_codetol(solver_t *s, double codetol) {
+	s->codetol = codetol;
+}
+
+void solver_set_maxquads(solver_t *s, int maxquads) {
+	s->maxquads = maxquads;
+}
+
+void solver_set_maxmatches(solver_t *s, int maxmatches) {
+	s->maxmatches = maxmatches;
+}

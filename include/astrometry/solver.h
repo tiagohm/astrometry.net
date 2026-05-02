@@ -411,4 +411,13 @@ void solver_print_to(const solver_t* sp, FILE* stream);
 
 void solver_log_params(const solver_t* sp);
 
+void solver_set_scale_range(solver_t* t, double funits_lower, double funits_upper);
+void solver_set_tweak_order(solver_t* t, int enabled, int aborder, int abporder);
+void solver_set_crpix(solver_t* t, double x, double y);
+void solver_set_crpix_center(solver_t* t, int enabled);
+void solver_set_verify_pix(solver_t* t, double verify_pix);
+void solver_set_codetol(solver_t* t, double codetol);
+void solver_set_maxquads(solver_t* t, int maxquads);
+void solver_set_maxmatches(solver_t* t, int maxmatches);
+
 #endif
