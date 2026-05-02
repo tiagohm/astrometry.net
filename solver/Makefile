@@ -59,9 +59,9 @@ CFLAGS += -I$(ANUTILS_DIR)
 CFLAGS += -I.
 CFLAGS += $(CFITS_INC)
 
-PROCESSOR := $(shell uname -p)
+MACHINE := $(shell uname -m)
 
-ifeq ($(PROCESSOR),x86_64)
+ifeq ($(MACHINE),x86_64)
 CFLAGS += -mno-avx512f -mno-avx512vl
 endif
 
