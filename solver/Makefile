@@ -58,7 +58,12 @@ CFLAGS += -I$(ANUTILS_DIR)
 # wcs-resample.h
 CFLAGS += -I.
 CFLAGS += $(CFITS_INC)
+
+PROCESSOR := $(shell uname -p)
+
+ifeq ($(PROCESSOR),x86_64)
 CFLAGS += -mno-avx512f -mno-avx512vl
+endif
 
 SHAREDLIBFLAGS := $(SHAREDLIBFLAGS_DEF)
 
