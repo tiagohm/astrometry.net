@@ -62,8 +62,10 @@ CFLAGS += $(CFITS_INC)
 MACHINE := $(shell uname -m)
 
 ifeq ($(MACHINE),x86_64)
-CFLAGS += -mno-avx512f -mno-avx512vl
+CFLAGS += -msse4.2 -mpopcnt -mavx -mavx2
 endif
+
+CFLAGS += -O3
 
 SHAREDLIBFLAGS := $(SHAREDLIBFLAGS_DEF)
 
