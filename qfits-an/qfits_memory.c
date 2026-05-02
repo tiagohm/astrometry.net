@@ -39,7 +39,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#if !defined(_WIN32) || defined(__CYGWIN__)
 #include <sys/resource.h>
+#endif
 #include <errno.h>
 #include <assert.h>
 
@@ -1319,7 +1321,9 @@ static unsigned qfits_memory_hash(const char * key)
 /*----------------------------------------------------------------------------*/
 static void qfits_memory_init(void)
 {
+#if !defined(_WIN32) || defined(__CYGWIN__)
     struct rlimit rlim;
+#endif
 
     qfits_mem_debug(
         fprintf(stderr,
@@ -1332,7 +1336,8 @@ static void qfits_memory_init(void)
 
     /* Install cleanup routine at exit */
     atexit(qfits_memory_cleanup);
-        
+
+#if !defined(_WIN32) || defined(__CYGWIN__)
     /* Increase number of descriptors to maximum */
     getrlimit(RLIMIT_NOFILE, &rlim);
     qfits_mem_debug(
@@ -1342,6 +1347,7 @@ static void qfits_memory_init(void)
     );
     rlim.rlim_cur = rlim.rlim_max;
     setrlimit(RLIMIT_NOFILE, &rlim);
+#endif
 
 #ifdef __linux__
     /* Get RLIMIT_DATA on Linux */

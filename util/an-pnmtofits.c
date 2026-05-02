@@ -11,7 +11,7 @@
 #if HAVE_NETPBM
 #include <netpbm/pam.h>
 #else
-#include <arpa/inet.h>
+#include "net-compat.h"
 #endif
 
 #include "log.h"

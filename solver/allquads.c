@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <limits.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <assert.h>
 
 #include "starutil.h"
@@ -268,4 +266,3 @@ int allquads_open_outputs(allquads_t* aq) {
     aq->quads->index_scale_lower = aq->codes->index_scale_lower;
     return 0;
 }
-

@@ -36,7 +36,9 @@
 int qfits_is_platform_big_endian(void);
 
 // Not POSIX; doesn't exist in Solaris 10
+#if !defined(_WIN32) || defined(__CYGWIN__)
 #include <sys/param.h>
+#endif
 #ifndef MIN
 #define	MIN(a,b) (((a)<(b))?(a):(b))
 #endif

@@ -7,7 +7,8 @@
 #define TIC_H
 
 #include <time.h>
-#include <sys/time.h>
+
+#include "astrometry/time-compat.h"
 
 void tic();
 int get_resource_stats(double* p_usertime, double* p_systime, long* p_maxrss);

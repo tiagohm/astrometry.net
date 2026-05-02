@@ -9,13 +9,10 @@
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#if !defined(_WIN32) || defined(__CYGWIN__)
 #include <sys/select.h>
+#endif
 #include <fcntl.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <assert.h>
@@ -27,6 +24,9 @@
 
 #include "os-features.h"
 #include "mmap-compat.h"
+#include "net-compat.h"
+#include "process-compat.h"
+#include "time-compat.h"
 #include "ioutils.h"
 #include "errors.h"
 #include "log.h"
@@ -392,6 +392,78 @@ static int readfd(int fd, char* buf, int NB, char** pcursor,
 }
 
 int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    int status;
+    int exitval;
+    char* fullcmd = NULL;
+    char outfn[MAX_PATH] = "";
+    char errfn[MAX_PATH] = "";
+    char tempdir[MAX_PATH];
+
+    if (!outlines && !errlines) {
+        status = system(cmd);
+        if (status == -1) {
+            SYSERROR("Failed to run command \"%s\"", cmd);
+            return -1;
+        }
+        exitval = WEXITSTATUS(status);
+        if (exitval)
+            ERROR("Command failed: return value %i", exitval);
+        return exitval;
+    }
+
+    if (!GetTempPathA(sizeof(tempdir), tempdir)) {
+        SYSERROR("Failed to find temporary directory");
+        return -1;
+    }
+
+    if (outlines && !GetTempFileNameA(tempdir, "an", 0, outfn)) {
+        SYSERROR("Failed to create stdout temporary file");
+        return -1;
+    }
+    if (errlines && !GetTempFileNameA(tempdir, "an", 0, errfn)) {
+        SYSERROR("Failed to create stderr temporary file");
+        if (outfn[0])
+            remove(outfn);
+        return -1;
+    }
+
+    if (outlines && errlines)
+        asprintf_safe(&fullcmd, "%s > \"%s\" 2> \"%s\"", cmd, outfn, errfn);
+    else if (outlines)
+        asprintf_safe(&fullcmd, "%s > \"%s\"", cmd, outfn);
+    else
+        asprintf_safe(&fullcmd, "%s 2> \"%s\"", cmd, errfn);
+
+    status = system(fullcmd);
+    free(fullcmd);
+    if (status == -1) {
+        SYSERROR("Failed to run command \"%s\"", cmd);
+        if (outfn[0])
+            remove(outfn);
+        if (errfn[0])
+            remove(errfn);
+        return -1;
+    }
+
+    if (outlines) {
+        *outlines = file_get_lines(outfn, FALSE);
+        remove(outfn);
+        if (!*outlines)
+            return -1;
+    }
+    if (errlines) {
+        *errlines = file_get_lines(errfn, FALSE);
+        remove(errfn);
+        if (!*errlines)
+            return -1;
+    }
+
+    exitval = WEXITSTATUS(status);
+    if (exitval)
+        ERROR("Command failed: return value %i", exitval);
+    return exitval;
+#else
     int outpipe[2];
     int errpipe[2];
     pid_t pid;
@@ -582,6 +654,7 @@ int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
     }
     
     return 0;
+#endif
 }
 
 int mkdir_p(const char* dirpath) {
@@ -883,6 +956,13 @@ char* strdup_safe(const char* str) {
     return rtn;
 }
 
+#if defined(_WIN32) && !defined(__CYGWIN__)
+void add_sigbus_mmap_warning() {
+}
+
+void reset_sigbus_mmap_warning() {
+}
+#else
 static int oldsigbus_valid = 0;
 static struct sigaction oldsigbus;
 static void sigbus_handler(int sig) {
@@ -914,6 +994,7 @@ void reset_sigbus_mmap_warning() {
         }
     }
 }
+#endif
 
 int is_word(const char* cmdline, const char* keyword, char** cptr) {
     int len = strlen(keyword);

@@ -11,8 +11,6 @@
  */
 
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <libgen.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -21,6 +19,7 @@
 #include <math.h>
 #include <assert.h>
 
+#include "time-compat.h"
 #include "os-features.h"
 #include "onefield.h"
 #include "tweak.h"

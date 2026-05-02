@@ -14,9 +14,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <endian.h>
-#include <netinet/in.h>
-#include <byteswap.h>
 
 #include "mmap-compat.h"
 #include "nomad.h"

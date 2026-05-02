@@ -15,8 +15,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/time.h>
 #include <time.h>
 #include <libgen.h>
 #include <getopt.h>
@@ -32,6 +30,8 @@
 #define GLOB_TILDE 0
 #endif
 
+#include "process-compat.h"
+#include "time-compat.h"
 #include "os-features.h"
 #include "tic.h"
 #include "fileutils.h"

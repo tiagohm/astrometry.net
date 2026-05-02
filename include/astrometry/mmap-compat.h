@@ -1,6 +1,5 @@
 /*
- # This file is part of the Astrometry.net suite.
- # Licensed under a 3-clause BSD style license - see LICENSE
+ * Codex!
  */
 
 #ifndef ASTROMETRY_MMAP_COMPAT_H
@@ -10,6 +9,9 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
 
 #include <errno.h>

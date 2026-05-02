@@ -33,10 +33,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <pwd.h>
-#include <unistd.h>
-#include <sys/time.h>
 
+#include "time-compat.h"
 #include "qfits_time.h"
 
 /*-----------------------------------------------------------------------------
@@ -235,4 +233,3 @@ static long timer_to_time(time_t time_secs)
         }
     }
 }
-

@@ -15,7 +15,6 @@
 #include <ctype.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <libgen.h>
 #include <getopt.h>
 #include <dirent.h>
@@ -1154,4 +1153,3 @@ int job_set_output_base_dir(job_t* job, const char* dir) {
     }
     return 0;
 }
-

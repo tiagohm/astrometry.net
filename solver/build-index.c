@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <limits.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <assert.h>
 
 #include "os-features.h"
@@ -735,4 +733,3 @@ void build_index_defaults(index_params_t* p) {
     p->delete_tempfiles = TRUE;
     p->tempdir = "/tmp";
 }
-

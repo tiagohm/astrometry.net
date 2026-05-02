@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <limits.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <assert.h>
 
 #include "boilerplate.h"
@@ -224,7 +222,7 @@ int main(int argc, char** argv) {
     ip->Nside = Nside;
     ip->scanoccupied = TRUE;
 	
-    if (build_index_files(rdlsfn, indexfn, ip)) {
+    if (build_index_files(rdlsfn, 0, indexfn, ip)) {
         exit(-1);
     }
         
@@ -262,4 +260,3 @@ int main(int argc, char** argv) {
     printf("Done.\n");
     return 0;
 }
-

@@ -3,12 +3,11 @@
  # Licensed under a 3-clause BSD style license - see LICENSE
  */
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
 
+#include "net-compat.h"
 #include "usnob.h"
 #include "an-endian.h"
 
@@ -335,4 +334,3 @@ int usnob_parse_entry(unsigned char* line, usnob_entry* usnob) {
 
     return 0;
 }
-

@@ -29,7 +29,6 @@
 #include "fileutils.h"
 
 // required for this sample program, maybe not for yours...
-#include <sys/time.h>
 #include "anqfits.h"
 #include "image2xy.h"
 #include "sip_qfits.h"

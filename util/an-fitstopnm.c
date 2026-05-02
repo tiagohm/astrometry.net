@@ -3,7 +3,6 @@
  # Licensed under a 3-clause BSD style license - see LICENSE
  */
 
-#include <arpa/inet.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,6 +12,7 @@
 #include <math.h>
 
 #include "os-features.h"
+#include "net-compat.h"
 #include "an-bool.h"
 #include "anqfits.h"
 #include "permutedsort.h"

@@ -14,13 +14,13 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 #include <unistd.h>
 #include <libgen.h>
 #include <errors.h>
 #include <getopt.h>
 #include <assert.h>
 
+#include "process-compat.h"
 #include "boilerplate.h"
 #include "an-bool.h"
 #include "bl.h"
@@ -1422,4 +1422,3 @@ int main(int argc, char** args) {
 
     return 0;
 }
-

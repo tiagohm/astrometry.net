@@ -10,8 +10,9 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
-#include <sys/time.h>
+#if !defined(_WIN32) || defined(__CYGWIN__)
 #include <sys/resource.h>
+#endif
 #include <assert.h>
 
 #include "mmap-compat.h"
@@ -83,6 +84,7 @@ int main(int argc, char** args) {
     printf("Nside = %i, using %i healpixes.\n", Nside, HP);
 
     {
+#if !defined(_WIN32) || defined(__CYGWIN__)
         struct rlimit lim;
         getrlimit(RLIMIT_NOFILE, &lim);
         printf("Maximum number of files that can be opened: %li soft, %li hard\n",
@@ -91,6 +93,7 @@ int main(int argc, char** args) {
             printf("\n\nWARNING: This process is likely to fail - probably after working for many hours!\n\n\n");
             sleep(5);
         }
+#endif
     }
 
     usnobs = calloc(HP, sizeof(usnob_fits*));

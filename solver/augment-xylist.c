@@ -13,7 +13,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -1602,4 +1601,3 @@ static int parse_fields_string(il* fields, const char* str) {
     }
     return 0;
 }
-
