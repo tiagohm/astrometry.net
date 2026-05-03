@@ -335,6 +335,22 @@ LDFLAGS_DEF := $(LDFLAGS) $(FLAGS_DEF)
 
 LDLIBS_DEF := $(LDLIBS)
 
+CC_TARGET ?= $(shell $(CC) -dumpmachine 2>/dev/null)
+MINGW_TARGET := $(findstring mingw,$(CC_TARGET))$(findstring MINGW,$(UNAME))
+
+ifeq ($(origin REGEX_LIBS),undefined)
+  ifneq (,$(MINGW_TARGET))
+    REGEX_LIBS := -Wl,-Bstatic -lregex -ltre -lintl -liconv -lwinpthread -Wl,-Bdynamic
+  else
+    REGEX_LIBS :=
+  endif
+endif
+
+MINGW_STATIC_LDFLAGS :=
+ifneq (,$(MINGW_TARGET))
+  MINGW_STATIC_LDFLAGS := -static-libgcc
+endif
+
 # Make's default link recipe is:
 #    $(CC) $(LDFLAGS) n.o $(LOADLIBES) $(LDLIBS)
 # and some linkers demand that libraries appear *after* the object files,

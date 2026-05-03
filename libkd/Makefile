@@ -49,7 +49,7 @@ LDLIBS := $(LDLIBS_DEF)
 LDLIBS += $(LIBKD_LIB)
 LDLIBS += $(QFITS_LIB)
 LDLIBS += $(ANUTILS_LIB)
-LDLIBS += -lregex
+LDLIBS += $(REGEX_LIBS)
 
 LIBKD := libkd.a
 

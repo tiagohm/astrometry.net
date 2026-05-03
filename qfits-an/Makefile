@@ -32,7 +32,7 @@ LDFLAGS += $(LDFLAGS_DEF)
 
 LDLIBS := $(LDLIBS_DEF)
 LDLIBS += $(ANBASE_LIB)
-LDLIBS += -lregex
+LDLIBS += $(REGEX_LIBS)
 
 $(QFITS_LIB_FILE): $(OBJS)
 	-rm -f $@
