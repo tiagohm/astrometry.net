@@ -179,8 +179,8 @@ ifneq ($(origin ARCH_FLAGS),undefined)
 else
   # Try to guess some good compiler flags for this CPU.
 
-  # Use -march=native if it's available (gcc 4.2 and above)
-  ARG := -march=native
+  # Don't optimize for the build computer's CPU
+  ARG := -march=x86-64-v3
   X := $(shell $(CCTEST))
   ifneq ($(X),)
     FLAGS_DEF += $(X)
