@@ -300,7 +300,6 @@ endif
 
 FLAGS_DEF += -Winline
 
-
 # If user set FLAGS, use those rather than FLAGS_DEF.
 ifneq ($(origin FLAGS),undefined)
   FLAGS_DEF := $(FLAGS)
@@ -312,10 +311,6 @@ CFLAGS_DEF += -I$(INCLUDE_BASE_DIR)
 CFLAGS_DEF += -I$(INCLUDE_DIR)
 CFLAGS_DEF += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 CFLAGS_DEF += -D_GNU_SOURCE
-
-ifeq ($(MACHINE),x86_64)
-CFLAGS_DEF += -msse4.2 -mpopcnt -mavx -mavx2
-endif
 
 #ARG := -pthread
 #CFLAGS_DEF += $(shell $(CCTEST))
