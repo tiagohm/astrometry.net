@@ -163,6 +163,8 @@ FLAGS_DEF += $(shell $(CCTEST))
 #ARG := -std=c99
 #FLAGS_DEF += $(shell $(CCTEST))
 
+MACHINE:=$(shell uname -m)
+
 ## Below, we try to guess good compiler flags for this CPU / architecture.
 ## If we make an incorrect choice -- ie, the code fails in some way on the
 ## machine on which it was compiled, please let us know by posting at
@@ -184,7 +186,6 @@ else
     FLAGS_DEF += $(X)
   else
     # Try to guess -march
-    MACHINE:=$(shell uname -m)
     ifeq ($(MACHINE), i686)
       # gcc before version 3.1 doesn't support "pentium4"; use "i686" instead.
 
@@ -311,6 +312,10 @@ CFLAGS_DEF += -I$(INCLUDE_BASE_DIR)
 CFLAGS_DEF += -I$(INCLUDE_DIR)
 CFLAGS_DEF += -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64
 CFLAGS_DEF += -D_GNU_SOURCE
+
+ifeq ($(MACHINE),x86_64)
+CFLAGS_DEF += -msse4.2 -mpopcnt -mavx -mavx2
+endif
 
 #ARG := -pthread
 #CFLAGS_DEF += $(shell $(CCTEST))

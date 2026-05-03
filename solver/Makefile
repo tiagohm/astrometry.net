@@ -61,11 +61,6 @@ CFLAGS += -I$(ANUTILS_DIR)
 CFLAGS += -I.
 CFLAGS += $(CFITS_INC)
 
-MACHINE := $(shell uname -m)
-
-ifeq ($(MACHINE),x86_64)
-CFLAGS += -msse4.2 -mpopcnt -mavx -mavx2
-endif
 
 CFLAGS += -O3
 
