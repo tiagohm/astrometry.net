@@ -26,6 +26,15 @@
 #define S_ISLNK(mode) 0
 #endif
 
+static int an_mkdir(const char* path, int mode) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    (void)mode;
+    return mkdir(path);
+#else
+    return mkdir(path, mode);
+#endif
+}
+
 #include "os-features.h"
 #include "mmap-compat.h"
 #include "net-compat.h"
@@ -674,7 +683,7 @@ int mkdir_p(const char* dirpath) {
     free(path);
     while (sl_size(tomake)) {
         char* path = sl_pop(tomake);
-        if (mkdir(path, 0777)) {
+        if (an_mkdir(path, 0777)) {
             SYSERROR("Failed to mkdir(%s)", path);
             sl_free2(tomake);
             free(path);
