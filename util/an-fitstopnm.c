@@ -23,6 +23,10 @@
 
 static const char* OPTIONS = "hi:o:Oe:p:m:IX:N:xnrsvML:H:";
 
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#define random rand
+#endif
+
 static void printHelp(char* progname) {
     printf("%s    -i <input-file>\n"
            "      [-o <output-file>]       (default stdout)\n"

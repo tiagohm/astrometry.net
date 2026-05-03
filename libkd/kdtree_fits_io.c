@@ -15,10 +15,10 @@
 #include "fitsioutils.h"
 #include "anqfits.h"
 #include "ioutils.h"
-#include "errors.h"
 #include "fitsbin.h"
 #include "tic.h"
 #include "log.h"
+#include "errors.h"
 
 // is the given table name one of the above strings?
 int kdtree_fits_column_is_kdtree(char* columnname) {

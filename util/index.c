@@ -5,7 +5,6 @@
 
 #include "index.h"
 #include "log.h"
-#include "errors.h"
 #include "ioutils.h"
 #include "healpix.h"
 #include "tic.h"
@@ -13,6 +12,7 @@
 #include "anqfits.h"
 #include "qfits_rw.h"
 #include "starutil.h"
+#include "errors.h"
 
 anbool index_overlaps_scale_range(index_t* meta,
                                   double quadlo, double quadhi) {

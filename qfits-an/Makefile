@@ -32,6 +32,7 @@ LDFLAGS += $(LDFLAGS_DEF)
 
 LDLIBS := $(LDLIBS_DEF)
 LDLIBS += $(ANBASE_LIB)
+LDLIBS += -lregex
 
 $(QFITS_LIB_FILE): $(OBJS)
 	-rm -f $@

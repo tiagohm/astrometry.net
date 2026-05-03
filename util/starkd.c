@@ -13,11 +13,11 @@
 #include "starutil.h"
 #include "fitsbin.h"
 #include "fitstable.h"
-#include "errors.h"
 #include "tic.h"
 #include "log.h"
 #include "ioutils.h"
 #include "fitsioutils.h"
+#include "errors.h"
 
 static startree_t* startree_alloc() {
     startree_t* s = calloc(1, sizeof(startree_t));
