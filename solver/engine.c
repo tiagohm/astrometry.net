@@ -34,13 +34,13 @@
 #include "onefield.h"
 #include "log.h"
 #include "anqfits.h"
-#include "errors.h"
 #include "engine.h"
 #include "tic.h"
 #include "healpix.h"
 #include "sip-utils.h"
 #include "multiindex.h"
 #include "indexset.h"
+#include "errors.h"
 
 void engine_add_search_path(engine_t* engine, const char* path) {
     sl_append(engine->index_paths, path);

@@ -41,9 +41,11 @@ ENGINE_LIB := libastrometry.a
 ENGINE_SO := libastrometry.$(SO)
 
 LDFLAGS := $(LDFLAGS_DEF)
+LDFLAGS += -static-libgcc
 
 LDLIBS := $(LDLIBS_DEF)
 LDLIBS += $(ANFILES_LIB)
+LDLIBS += -Wl,-Bstatic -lregex -ltre -lintl -liconv -lwinpthread -Wl,-Bdynamic
 
 SLIB := $(ENGINE_LIB)
 SLIB += $(CATS_SLIB)

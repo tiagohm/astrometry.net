@@ -5,6 +5,12 @@
 #ifndef ASTROMETRY_PROCESS_COMPAT_H
 #define ASTROMETRY_PROCESS_COMPAT_H
 
+#include <signal.h>
+
+#ifndef SIGTERM
+#define SIGTERM 15
+#endif
+
 #if defined(_WIN32) && !defined(__CYGWIN__)
 
 #ifndef WIFEXITED

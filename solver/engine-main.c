@@ -14,12 +14,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <time.h>
 #include <libgen.h>
 #include <getopt.h>
 #include <dirent.h>
 #include <assert.h>
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
 #include <glob.h>
 
 // Some systems (Solaris) don't have these glob symbols.  Don't really need.
@@ -28,6 +38,7 @@
 #endif
 #ifndef GLOB_TILDE
 #define GLOB_TILDE 0
+#endif
 #endif
 
 #include "process-compat.h"
@@ -82,6 +93,126 @@ static void print_help(const char* progname, bl* opts) {
     printf("Usage:   %s [options] <augmented xylist (axy) file(s)>\n", progname);
     opts_print_help(opts, stdout, NULL, NULL);
 }
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+static void engine_windows_set_errno(DWORD error) {
+    switch (error) {
+    case ERROR_FILE_NOT_FOUND:
+    case ERROR_PATH_NOT_FOUND:
+        errno = ENOENT;
+        break;
+    case ERROR_ACCESS_DENIED:
+    case ERROR_SHARING_VIOLATION:
+        errno = EACCES;
+        break;
+    case ERROR_NOT_ENOUGH_MEMORY:
+    case ERROR_OUTOFMEMORY:
+        errno = ENOMEM;
+        break;
+    default:
+        errno = EINVAL;
+        break;
+    }
+}
+
+static const char* engine_last_path_separator(const char* path) {
+    const char* slash = strrchr(path, '/');
+    const char* backslash = strrchr(path, '\\');
+    if (!slash)
+        return backslash;
+    if (!backslash)
+        return slash;
+    return (slash > backslash) ? slash : backslash;
+}
+
+static char* engine_join_find_data_path(const char* pattern,
+                                        const WIN32_FIND_DATAA* finddata) {
+    const char* sep = engine_last_path_separator(pattern);
+    size_t prefix_len = sep ? (size_t)(sep - pattern + 1) : 0;
+    size_t name_len = strlen(finddata->cFileName);
+    char* path = malloc(prefix_len + name_len + 1);
+
+    if (!path) {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    if (prefix_len)
+        memcpy(path, pattern, prefix_len);
+    memcpy(path + prefix_len, finddata->cFileName, name_len + 1);
+    return path;
+}
+
+static int engine_add_index_pattern(engine_t* engine, const char* pattern) {
+    WIN32_FIND_DATAA finddata;
+    HANDLE handle;
+    DWORD error;
+    sl* paths;
+    int i;
+
+    handle = FindFirstFileA(pattern, &finddata);
+    if (handle == INVALID_HANDLE_VALUE) {
+        engine_windows_set_errno(GetLastError());
+        SYSERROR("Failed to expand wildcards in index-file path \"%s\"", pattern);
+        return -1;
+    }
+
+    paths = sl_new(16);
+    while (1) {
+        char* path = engine_join_find_data_path(pattern, &finddata);
+        if (!path) {
+            FindClose(handle);
+            sl_free2(paths);
+            SYSERROR("Failed to allocate index-file path for \"%s\"", pattern);
+            return -1;
+        }
+        sl_insert_sorted_nocopy(paths, path);
+
+        if (!FindNextFileA(handle, &finddata))
+            break;
+    }
+
+    error = GetLastError();
+    FindClose(handle);
+    if (error != ERROR_NO_MORE_FILES) {
+        engine_windows_set_errno(error);
+        sl_free2(paths);
+        SYSERROR("Failed to expand wildcards in index-file path \"%s\"", pattern);
+        return -1;
+    }
+
+    for (i=0; i<sl_size(paths); i++) {
+        char* path = sl_get(paths, i);
+        if (engine_add_index(engine, path)) {
+            ERROR("Failed to add index \"%s\"", path);
+            sl_free2(paths);
+            return -1;
+        }
+    }
+    sl_free2(paths);
+    return 0;
+}
+#else
+static int engine_add_index_pattern(engine_t* engine, const char* pattern) {
+    int c;
+    glob_t myglob;
+    int flags = GLOB_TILDE | GLOB_BRACE;
+
+    if (glob(pattern, flags, NULL, &myglob)) {
+        SYSERROR("Failed to expand wildcards in index-file path \"%s\"", pattern);
+        return -1;
+    }
+    for (c=0; c<myglob.gl_pathc; c++) {
+        if (engine_add_index(engine, myglob.gl_pathv[c])) {
+            ERROR("Failed to add index \"%s\"", myglob.gl_pathv[c]);
+            globfree(&myglob);
+            return -1;
+        }
+    }
+    globfree(&myglob);
+    return 0;
+}
+#endif
 
 FILE* datalogfid = NULL;
 static void close_datalogfid() {
@@ -274,19 +405,8 @@ int main(int argc, char** args) {
         // Expand globs.
         for (i=0; i<sl_size(index_files); i++) {
             char* s = sl_get(index_files, i);
-            glob_t myglob;
-            int flags = GLOB_TILDE | GLOB_BRACE;
-            if (glob(s, flags, NULL, &myglob)) {
-                SYSERROR("Failed to expand wildcards in index-file path \"%s\"", s);
+            if (engine_add_index_pattern(engine, s))
                 exit(-1);
-            }
-            for (c=0; c<myglob.gl_pathc; c++) {
-                if (engine_add_index(engine, myglob.gl_pathv[c])) {
-                    ERROR("Failed to add index \"%s\"", myglob.gl_pathv[c]);
-                    exit(-1);
-                }
-            }
-            globfree(&myglob);
         }
     }
 
