@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#if !defined(_WIN32) || defined(__CYGWIN__)
+#include <strings.h>
+#endif
 #include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -13,12 +16,15 @@
 #include <sys/select.h>
 #endif
 #include <fcntl.h>
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#include <direct.h>
+#include <io.h>
+#endif
 #include <stdlib.h>
 #include <signal.h>
 #include <assert.h>
 #include <unistd.h>
 #include <stdarg.h>
-#include <libgen.h>
 #include <dirent.h>
 #include <time.h>
 
@@ -26,12 +32,189 @@
 #define S_ISLNK(mode) 0
 #endif
 
+#ifndef F_OK
+#define F_OK 0
+#endif
+
+#ifndef R_OK
+#define R_OK 4
+#endif
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+static int an_is_path_separator(char c) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    return (c == '/') || (c == '\\');
+#else
+    return (c == '/');
+#endif
+}
+
+static int an_path_is_absolute(const char* path) {
+    if (!path || !path[0])
+        return 0;
+    if (an_is_path_separator(path[0]))
+        return 1;
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    if ((((path[0] >= 'A') && (path[0] <= 'Z')) ||
+         ((path[0] >= 'a') && (path[0] <= 'z'))) &&
+        (path[1] == ':'))
+        return 1;
+#endif
+    return 0;
+}
+
+static char* an_strndup(const char* str, size_t len) {
+    char* rtn = malloc(len + 1);
+    if (!rtn)
+        return NULL;
+    memcpy(rtn, str, len);
+    rtn[len] = '\0';
+    return rtn;
+}
+
+static char* an_dirname_dup(const char* path) {
+    size_t len;
+    size_t i;
+
+    if (!path || !path[0])
+        return strdup(".");
+
+    len = strlen(path);
+    while ((len > 1) && an_is_path_separator(path[len - 1]))
+        len--;
+
+    i = len;
+    while ((i > 0) && !an_is_path_separator(path[i - 1]))
+        i--;
+
+    if (i == 0)
+        return strdup(".");
+
+    while ((i > 1) && an_is_path_separator(path[i - 1]))
+        i--;
+
+    return an_strndup(path, i);
+}
+
+static char* an_basename_dup(const char* path) {
+    size_t len;
+    size_t i;
+
+    if (!path || !path[0])
+        return strdup(".");
+
+    len = strlen(path);
+    while ((len > 1) && an_is_path_separator(path[len - 1]))
+        len--;
+
+    i = len;
+    while ((i > 0) && !an_is_path_separator(path[i - 1]))
+        i--;
+
+    if (i == len)
+        return an_strndup(path, len);
+
+    return an_strndup(path + i, len - i);
+}
+
+static int an_strcasecmp(const char* str1, const char* str2) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    return _stricmp(str1, str2);
+#else
+    return strcasecmp(str1, str2);
+#endif
+}
+
 static int an_mkdir(const char* path, int mode) {
 #if defined(_WIN32) && !defined(__CYGWIN__)
     (void)mode;
     return mkdir(path);
 #else
     return mkdir(path, mode);
+#endif
+}
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+static char* an_template_suffix(char* path) {
+    size_t len = strlen(path);
+    if ((len < 6) || strcmp(path + len - 6, "XXXXXX")) {
+        errno = EINVAL;
+        return NULL;
+    }
+    return path + len - 6;
+}
+
+static void an_fill_template_suffix(char* suffix, unsigned int attempt) {
+    static const char chars[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    uintptr_t seed = (uintptr_t)suffix;
+    int i;
+
+    seed ^= (uintptr_t)time(NULL);
+    seed ^= (uintptr_t)clock();
+    seed ^= ((uintptr_t)attempt + 1) * 1103515245u;
+
+    for (i=0; i<6; i++) {
+        seed = (seed * 1664525u) + 1013904223u;
+        suffix[i] = chars[seed % (sizeof(chars) - 1)];
+    }
+}
+#endif
+
+static int an_mkstemp(char* path) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    char* suffix = an_template_suffix(path);
+    unsigned int attempt;
+
+    if (!suffix)
+        return -1;
+
+    for (attempt=0; attempt<1024; attempt++) {
+        int fd;
+        an_fill_template_suffix(suffix, attempt);
+        fd = open(path, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
+        if (fd != -1)
+            return fd;
+        if (errno != EEXIST)
+            return -1;
+    }
+
+    errno = EEXIST;
+    return -1;
+#else
+    return mkstemp(path);
+#endif
+}
+
+static char* an_mkdtemp(char* path) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    char* suffix = an_template_suffix(path);
+    unsigned int attempt;
+
+    if (!suffix)
+        return NULL;
+
+    for (attempt=0; attempt<1024; attempt++) {
+        an_fill_template_suffix(suffix, attempt);
+        if (!an_mkdir(path, 0700))
+            return path;
+        if (errno != EEXIST)
+            return NULL;
+    }
+
+    errno = EEXIST;
+    return NULL;
+#elif defined(__sun)
+    if (!mktemp(path))
+        return NULL;
+    if (an_mkdir(path, 0700))
+        return NULL;
+    return path;
+#else
+    return mkdtemp(path);
 #endif
 }
 
@@ -203,24 +386,18 @@ int pad_file(char* filename, size_t len, char pad) {
 
 Malloc
 char* dirname_safe(const char* path) {
-    char* copy = strdup(path);
-    char* res = strdup(dirname(copy));
-    free(copy);
-    return res;
+    return an_dirname_dup(path);
 }
 
 Malloc
 char* basename_safe(const char* path) {
-    char* copy = strdup(path);
-    char* res = strdup(basename(copy));
-    free(copy);
-    return res;
+    return an_basename_dup(path);
 }
 
 char* find_file_in_dirs(const char** dirs, int ndirs, const char* filename, anbool allow_absolute) {
     int i;
     if (!filename) return NULL;
-    if (allow_absolute && filename[0] == '/') {
+    if (allow_absolute && an_path_is_absolute(filename)) {
         if (file_readable(filename))
             return strdup(filename);
     }
@@ -255,7 +432,7 @@ anbool streq(const char* s1, const char* s2) {
 anbool strcaseeq(const char* s1, const char* s2) {
     if (s1 == NULL || s2 == NULL)
         return (s1 == s2);
-    return !strcasecmp(s1, s2);
+    return !an_strcasecmp(s1, s2);
 }
 
 int pipe_file_offset(FILE* fin, off_t offset, off_t length, FILE* fout) {
@@ -324,6 +501,7 @@ sl* dir_get_contents(const char* path, sl* list, anbool filesonly, anbool recurs
         if (stat(fullpath, &st)) {
             fprintf(stderr, "Failed to stat file %s: %s\n", fullpath, strerror(errno));
             // this can happen when files are deleted, eg
+            free(fullpath);
             continue;
             //closedir(dir);
             //sl_free2(list);
@@ -339,7 +517,7 @@ sl* dir_get_contents(const char* path, sl* list, anbool filesonly, anbool recurs
             sl_append_nocopy(list, fullpath);
         }
         if (recurse && S_ISDIR(st.st_mode)) {
-            dir_get_contents(path, list, filesonly, recurse);
+            dir_get_contents(fullpath, list, filesonly, recurse);
         }
         if (freeit)
             free(fullpath);
@@ -348,6 +526,7 @@ sl* dir_get_contents(const char* path, sl* list, anbool filesonly, anbool recurs
     return list;
 }
 
+#if !defined(_WIN32) || defined(__CYGWIN__)
 static int readfd(int fd, char* buf, int NB, char** pcursor,
                   sl* lines, anbool* pdone) {
     int nr;
@@ -403,6 +582,7 @@ static int readfd(int fd, char* buf, int NB, char** pcursor,
     *pcursor = cursor;
     return 0;
 }
+#endif
 
 int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
 #if defined(_WIN32) && !defined(__CYGWIN__)
@@ -676,7 +856,7 @@ int mkdir_p(const char* dirpath) {
     while (!file_exists(path)) {
         char* dir;
         sl_push(tomake, path);
-        dir = strdup(dirname(path));
+        dir = dirname_safe(path);
         free(path);
         path = dir;
     }
@@ -725,7 +905,13 @@ char* shell_escape(const char* str) {
 }
 
 static char* get_temp_dir() {
-    char* dir = getenv("TMP");
+    char* dir = getenv("TMPDIR");
+    if (!dir) {
+        dir = getenv("TEMP");
+    }
+    if (!dir) {
+        dir = getenv("TMP");
+    }
     if (!dir) {
         dir = "/tmp";
     }
@@ -740,7 +926,7 @@ char* create_temp_file(const char* fn, const char* dir) {
     }
 
     asprintf_safe(&tempfile, "%s/tmp.%s.XXXXXX", dir, fn);
-    fid = mkstemp(tempfile);
+    fid = an_mkstemp(tempfile);
     if (fid == -1) {
         fprintf(stderr, "Failed to create temp file: %s\n", strerror(errno));
         exit(-1);
@@ -756,20 +942,10 @@ char* create_temp_dir(const char* name, const char* dir) {
         dir = get_temp_dir();
     }
     asprintf_safe(&tempdir, "%s/tmp.%s.XXXXXX", dir, name);
-    // no mkdtemp() in some versions of Solaris;
-    // https://groups.google.com/forum/#!topic/astrometry/quGEbY1CgR8
-#if defined(__sun)
-    mktemp(tempdir);
-    if (!mkdir(tempdir, 0700)) {
+    if (!an_mkdtemp(tempdir)) {
         SYSERROR("Failed to create temp dir");
         return NULL;
     }
-#else
-    if (!mkdtemp(tempdir)) {
-        SYSERROR("Failed to create temp dir");
-        return NULL;
-    }
-#endif
     return tempdir;
 }
 
@@ -928,7 +1104,11 @@ anbool file_readable(const char* fn) {
 }
 
 anbool file_executable(const char* fn) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    return file_exists(fn);
+#else
     return fn && (access(fn, X_OK) == 0);
+#endif
 }
 
 anbool path_is_dir(const char* path) {
