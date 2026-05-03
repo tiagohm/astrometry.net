@@ -22,6 +22,10 @@
 #include <dirent.h>
 #include <time.h>
 
+#ifndef S_ISLNK
+#define S_ISLNK(mode) 0
+#endif
+
 #include "os-features.h"
 #include "mmap-compat.h"
 #include "net-compat.h"
