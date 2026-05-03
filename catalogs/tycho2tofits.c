@@ -126,7 +126,7 @@ int main(int argc, char** args) {
 
         if ((map_size % recsize) && (map_size % (recsize+1)) && (map_size % (recsize+2))) {
             fprintf(stderr, "Warning, input file %s has size %u which is not divisible into %i-, %i-, or %i-byte records.\n",
-                    infn, (uint)map_size, recsize, recsize+1, recsize+2);
+                    infn, (unsigned int)map_size, recsize, recsize+1, recsize+2);
         }
 
         for (i=0; i<map_size;) {

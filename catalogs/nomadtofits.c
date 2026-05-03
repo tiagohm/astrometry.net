@@ -82,7 +82,7 @@ int main(int argc, char** args) {
 
     nomads = calloc(HP, sizeof(nomad_fits*));
 
-    memset(slicecounts, 0, 1800 * sizeof(uint));
+    memset(slicecounts, 0, 1800 * sizeof(unsigned int));
 
     nrecords = 0;
     nfiles = 0;

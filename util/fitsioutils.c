@@ -1054,7 +1054,9 @@ static void fits_init_endian_string() {
         uint32_t endian = ENDIAN_DETECTOR;
         unsigned char* cptr = (unsigned char*)&endian;
         fits_endian_string_inited = 1;
-        sprintf(fits_endian_string, "%02x:%02x:%02x:%02x", (uint)cptr[0], (uint)cptr[1], (uint)cptr[2], (uint)cptr[3]);
+        sprintf(fits_endian_string, "%02x:%02x:%02x:%02x",
+                (unsigned int)cptr[0], (unsigned int)cptr[1],
+                (unsigned int)cptr[2], (unsigned int)cptr[3]);
     }
 }
 
@@ -1174,7 +1176,7 @@ int fits_find_column(const qfits_table* table, const char* colname) {
 }
 
 void fits_add_uint_size(qfits_header* header) {
-    fits_header_add_int(header, "UINT_SZ", sizeof(uint), "sizeof(uint)");
+    fits_header_add_int(header, "UINT_SZ", sizeof(unsigned int), "sizeof(unsigned int)");
 }
 
 void fits_add_double_size(qfits_header* header) {
@@ -1184,9 +1186,9 @@ void fits_add_double_size(qfits_header* header) {
 int fits_check_uint_size(const qfits_header* header) {
     int uintsz;
     uintsz = qfits_header_getint(header, "UINT_SZ", -1);
-    if (sizeof(uint) != uintsz) {
-        fprintf(stderr, "File was written with sizeof(uint)=%i, but currently sizeof(uint)=%u.\n",
-                uintsz, (uint)sizeof(uint));
+    if (sizeof(unsigned int) != (size_t)uintsz) {
+        fprintf(stderr, "File was written with sizeof(unsigned int)=%i, but currently sizeof(unsigned int)=%u.\n",
+                uintsz, (unsigned int)sizeof(unsigned int));
         return -1;
     }
     return 0;
@@ -1195,9 +1197,9 @@ int fits_check_uint_size(const qfits_header* header) {
 int fits_check_double_size(const qfits_header* header) {
     int doublesz;
     doublesz = qfits_header_getint(header, "DUBL_SZ", -1);
-    if (sizeof(double) != doublesz) {
+    if (sizeof(double) != (size_t)doublesz) {
         fprintf(stderr, "File was written with sizeof(double)=%i, but currently sizeof(double)=%u.\n",
-                doublesz, (uint)sizeof(double));
+                doublesz, (unsigned int)sizeof(double));
         return -1;
     }
     return 0;

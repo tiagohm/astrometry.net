@@ -139,7 +139,7 @@ void test1() {
 
     starxy = field1();
 
-    quadlist = bl_new(16, 4*sizeof(uint));
+    quadlist = bl_new(16, 4*sizeof(unsigned int));
 
     solver = solver_new();
 
@@ -161,7 +161,7 @@ void test1() {
     solver_free(solver);
 
     //
-    assert(bl_size(quadlist) == (sizeof(wanted) / (4*sizeof(uint))));
+    assert(bl_size(quadlist) == (sizeof(wanted) / (4*sizeof(unsigned int))));
     for (i=0; i<bl_size(quadlist); i++) {
         assert(compare_quad(bl_access(quadlist, i), wanted[i]) == 0);
     }
@@ -208,7 +208,7 @@ void test2() {
     };
 
     starxy = field1();
-    quadlist = bl_new(16, 3*sizeof(uint));
+    quadlist = bl_new(16, 3*sizeof(unsigned int));
     solver = solver_new();
     memset(&index, 0, sizeof(index_t));
     index.index_scale_lower = 1;
@@ -228,7 +228,7 @@ void test2() {
     solver_free(solver);
 
     //
-    assert(bl_size(quadlist) == (sizeof(wanted) / (3*sizeof(uint))));
+    assert(bl_size(quadlist) == (sizeof(wanted) / (3*sizeof(unsigned int))));
     bl_sort(quadlist, compare_tri);
     for (i=0; i<bl_size(quadlist); i++) {
         assert(compare_tri(bl_access(quadlist, i), wanted[i]) == 0);

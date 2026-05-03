@@ -86,7 +86,7 @@ int main(int argc, char** args) {
     HP = 12 * Nside * Nside;
     printf("Nside = %i, using %i healpixes.\n", Nside, HP);
     ucacs = calloc(HP, sizeof(ucac3_fits*));
-    memset(slicecounts, 0, 1800 * sizeof(uint));
+    memset(slicecounts, 0, 1800 * sizeof(unsigned int));
     nrecords = 0;
     nfiles = 0;
 

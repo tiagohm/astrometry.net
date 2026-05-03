@@ -98,7 +98,7 @@ int main(int argc, char** args) {
 
     usnobs = calloc(HP, sizeof(usnob_fits*));
 
-    memset(slicecounts, 0, 180 * sizeof(uint));
+    memset(slicecounts, 0, 180 * sizeof(unsigned int));
 
     nrecords = 0;
     nobs = 0;

@@ -459,8 +459,8 @@ int main(int argc, char **argv)
                 center[i] /= 4;
             normalize_3(center);
 		
-            centerhp = xyzarrtohealpix(center, (uint)Nside);
-            fill_maps(hpmap_min, hpmap_max, centerhp, (uint)Nside, &curfield);
+            centerhp = xyzarrtohealpix(center, (unsigned int)Nside);
+            fill_maps(hpmap_min, hpmap_max, centerhp, (unsigned int)Nside, &curfield);
 	}
     for (i = 0; i < 12 * Nside * Nside; i++)
 	{

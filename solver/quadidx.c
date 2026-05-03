@@ -177,8 +177,8 @@ int main(int argc, char *argv[]) {
         int* stars; // bad variable name - list of quads this star is in.
         il* list = quadlist[i];
         if (list) {
-            thisnumq = (uint)il_size(list);
-            stars = malloc(thisnumq * sizeof(uint));
+            thisnumq = (unsigned int)il_size(list);
+            stars = malloc(thisnumq * sizeof(unsigned int));
             il_copy(list, 0, thisnumq, (int*)stars);
         } else {
             thisnumq = 0;
