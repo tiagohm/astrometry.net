@@ -1,5 +1,6 @@
 /*
- * Codex!
+ * This file is part of the Astrometry.net suite.
+ * Licensed under a 3-clause BSD style license - see LICENSE
  */
 
 #ifndef ASTROMETRY_NET_COMPAT_H
@@ -20,20 +21,27 @@ static inline uint32_t astrometry_bswap32(uint32_t v) {
         ((v & 0xff000000u) >> 24);
 }
 
+/* Network order is big-endian. Swap only on little-endian targets. */
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define ASTROMETRY_HTON(bits, v) (v)
+#else
+#define ASTROMETRY_HTON(bits, v) astrometry_bswap##bits(v)
+#endif
+
 static inline uint16_t astrometry_htons(uint16_t v) {
-    return astrometry_bswap16(v);
+    return ASTROMETRY_HTON(16, v);
 }
 
 static inline uint16_t astrometry_ntohs(uint16_t v) {
-    return astrometry_bswap16(v);
+    return ASTROMETRY_HTON(16, v);
 }
 
 static inline uint32_t astrometry_htonl(uint32_t v) {
-    return astrometry_bswap32(v);
+    return ASTROMETRY_HTON(32, v);
 }
 
 static inline uint32_t astrometry_ntohl(uint32_t v) {
-    return astrometry_bswap32(v);
+    return ASTROMETRY_HTON(32, v);
 }
 
 #ifndef htons

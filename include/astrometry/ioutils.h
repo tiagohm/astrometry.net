@@ -77,6 +77,11 @@ ATTRIB_FORMAT(printf,2,3)
 
 int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines);
 
+/* Runs cmd through the platform shell. On Windows this is cmd.exe with
+ * AutoRun and delayed expansion disabled. The raw status is returned so
+ * WIFSIGNALED can see Ctrl-C. Returns -1 if the shell cannot be started. */
+int shell_system(const char* cmd);
+
 void get_mmap_size(size_t start, size_t size, off_t* mapstart, size_t* mapsize, int* pgap);
 
 // If "dir" is NULL, create temp file in $TMP, or /tmp if not set.

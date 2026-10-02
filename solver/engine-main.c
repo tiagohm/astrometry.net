@@ -159,14 +159,17 @@ static int engine_add_index_pattern(engine_t* engine, const char* pattern) {
 
     paths = sl_new(16);
     while (1) {
-        char* path = engine_join_find_data_path(pattern, &finddata);
-        if (!path) {
-            FindClose(handle);
-            sl_free2(paths);
-            SYSERROR("Failed to allocate index-file path for \"%s\"", pattern);
-            return -1;
+        if (strcmp(finddata.cFileName, ".") != 0 &&
+            strcmp(finddata.cFileName, "..") != 0) {
+            char* path = engine_join_find_data_path(pattern, &finddata);
+            if (!path) {
+                FindClose(handle);
+                sl_free2(paths);
+                SYSERROR("Failed to allocate index-file path for \"%s\"", pattern);
+                return -1;
+            }
+            sl_insert_sorted_nocopy(paths, path);
         }
-        sl_insert_sorted_nocopy(paths, path);
 
         if (!FindNextFileA(handle, &finddata))
             break;
@@ -177,6 +180,12 @@ static int engine_add_index_pattern(engine_t* engine, const char* pattern) {
     if (error != ERROR_NO_MORE_FILES) {
         engine_windows_set_errno(error);
         sl_free2(paths);
+        SYSERROR("Failed to expand wildcards in index-file path \"%s\"", pattern);
+        return -1;
+    }
+    if (sl_size(paths) == 0) {
+        sl_free2(paths);
+        errno = ENOENT;
         SYSERROR("Failed to expand wildcards in index-file path \"%s\"", pattern);
         return -1;
     }

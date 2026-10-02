@@ -1,5 +1,6 @@
 /*
- * Codex!
+ * This file is part of the Astrometry.net suite.
+ * Licensed under a 3-clause BSD style license - see LICENSE
  */
 
 #ifndef ASTROMETRY_MMAP_COMPAT_H
@@ -81,6 +82,27 @@ typedef struct astrometry_mmap_record {
 } astrometry_mmap_record_t;
 
 static astrometry_mmap_record_t* astrometry_mmap_records = NULL;
+static CRITICAL_SECTION astrometry_mmap_lock;
+static LONG astrometry_mmap_lock_state = 0;
+
+/* One list per translation unit: the record functions are static inline.
+ * The lock follows the list, so two files do not share it. */
+ASTROMETRY_MMAP_INLINE void astrometry_mmap_lock_acquire(void) {
+    LONG state = InterlockedCompareExchange(&astrometry_mmap_lock_state, 1, 0);
+
+    if (state == 0) {
+        InitializeCriticalSection(&astrometry_mmap_lock);
+        InterlockedExchange(&astrometry_mmap_lock_state, 2);
+    } else {
+        while (InterlockedCompareExchange(&astrometry_mmap_lock_state, 2, 2) != 2)
+            SwitchToThread();
+    }
+    EnterCriticalSection(&astrometry_mmap_lock);
+}
+
+ASTROMETRY_MMAP_INLINE void astrometry_mmap_lock_release(void) {
+    LeaveCriticalSection(&astrometry_mmap_lock);
+}
 
 ASTROMETRY_MMAP_INLINE void astrometry_mmap_set_errno(DWORD error) {
     switch (error) {
@@ -129,14 +151,23 @@ ASTROMETRY_MMAP_INLINE int astrometry_getpagesize(void) {
 #define getpagesize astrometry_getpagesize
 
 ASTROMETRY_MMAP_INLINE DWORD astrometry_mmap_file_protect(int prot, int flags) {
+    /* PAGE_WRITECOPY requires a writable file handle. qfits opens FITS
+     * files read-only and then asks for MAP_PRIVATE|PROT_WRITE. Windows
+     * accepts that as a PAGE_READONLY mapping viewed with FILE_MAP_COPY. */
+    if (flags & MAP_PRIVATE) {
+        if (prot & PROT_EXEC)
+            return PAGE_EXECUTE_READ;
+        return PAGE_READONLY;
+    }
+
     if (prot & PROT_EXEC) {
         if (prot & PROT_WRITE)
-            return (flags & MAP_PRIVATE) ? PAGE_EXECUTE_WRITECOPY : PAGE_EXECUTE_READWRITE;
+            return PAGE_EXECUTE_READWRITE;
         return PAGE_EXECUTE_READ;
     }
 
     if (prot & PROT_WRITE)
-        return (flags & MAP_PRIVATE) ? PAGE_WRITECOPY : PAGE_READWRITE;
+        return PAGE_READWRITE;
 
     return PAGE_READONLY;
 }
@@ -189,8 +220,10 @@ ASTROMETRY_MMAP_INLINE int astrometry_mmap_add_record(void* returned, void* base
     record->base = base;
     record->virtual_alloc = virtual_alloc;
     record->flush = flush;
+    astrometry_mmap_lock_acquire();
     record->next = astrometry_mmap_records;
     astrometry_mmap_records = record;
+    astrometry_mmap_lock_release();
     return 0;
 }
 
@@ -293,6 +326,7 @@ ASTROMETRY_MMAP_INLINE int astrometry_munmap(void* addr, size_t len) {
 
     (void)len;
 
+    astrometry_mmap_lock_acquire();
     prev = NULL;
     record = astrometry_mmap_records;
     while (record) {
@@ -317,6 +351,7 @@ ASTROMETRY_MMAP_INLINE int astrometry_munmap(void* addr, size_t len) {
             unmap_error = (!flush_ok) ? flush_error :
                 (ok ? ERROR_SUCCESS : GetLastError());
             HeapFree(GetProcessHeap(), 0, record);
+            astrometry_mmap_lock_release();
             if (!flush_ok || !ok) {
                 astrometry_mmap_set_errno(unmap_error);
                 return -1;
@@ -327,6 +362,7 @@ ASTROMETRY_MMAP_INLINE int astrometry_munmap(void* addr, size_t len) {
         prev = record;
         record = record->next;
     }
+    astrometry_mmap_lock_release();
 
     if (UnmapViewOfFile(addr))
         return 0;
@@ -337,6 +373,16 @@ ASTROMETRY_MMAP_INLINE int astrometry_munmap(void* addr, size_t len) {
 
 #define mmap astrometry_mmap
 #define munmap astrometry_munmap
+
+/* windows.h defines ERROR as the GDI constant 0. Put the logger back if
+ * errors.h was included first. */
+#ifdef AN_ERRORS_H
+#ifdef ERROR
+#undef ERROR
+#endif
+#define ERROR(fmt, ...) report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__)
+#define SYSERROR(fmt, ...) do { report_errno(); report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__); } while(0)
+#endif
 
 #else
 

@@ -11,7 +11,7 @@
  Collapses '//' to '/'.
  Does NOT care whether the file actually exists.
  Does NOT resolve symlinks.
- Assumes '/' is the path separator.
+ Assumes '/' is the path separator. On Windows, '\\' is a separator too.
 
  Returns a newly-allocated string which should be freed with free().
  */

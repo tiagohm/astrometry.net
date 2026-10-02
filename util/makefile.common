@@ -177,15 +177,20 @@ MACHINE:=$(shell uname -m)
 ifneq ($(origin ARCH_FLAGS),undefined)
   FLAGS_DEF += $(ARCH_FLAGS)
 else
-  # Try to guess some good compiler flags for this CPU.
-
-  # Don't optimize for the build computer's CPU
-  ARG := -march=x86-64-v3
-  X := $(shell $(CCTEST))
-  ifneq ($(X),)
-    FLAGS_DEF += $(X)
+  # Portable baseline. -march=native embeds the build CPU, including
+  # AVX-512, and the binary then faults on other machines. x86-64-v3
+  # still requires AVX2. Override with ARCH_FLAGS for a newer ISA.
+  # make 3.79 doesn't allow "else ifeq", so the tests are nested.
+  ifeq ($(MACHINE),x86_64)
+    ARG := -march=x86-64
+    X := $(shell $(CCTEST))
+    ifneq ($(X),)
+      FLAGS_DEF += $(X)
+      FLAGS_DEF += -m64
+    else
+      FLAGS_DEF += -DNOT_686
+    endif
   else
-    # Try to guess -march
     ifeq ($(MACHINE), i686)
       # gcc before version 3.1 doesn't support "pentium4"; use "i686" instead.
 
@@ -199,18 +204,8 @@ else
         ARG := -march=i686
         FLAGS_DEF += $(shell $(CCTEST))
       endif
-
     else
-      # make 3.79 doesn't allow multiple "else" statements, so nest 'em.
-      ifeq ($(MACHINE), x86_64)
-        STR := \#define __tune_k8__ 1
-        FLAGS_DEF += $(shell $(DEFTEST) && echo "-march=k8")
-          FLAGS_DEF += -m64
-      else # ppc, ...
-        FLAGS_DEF += -DNOT_686
-
-      endif
-
+      FLAGS_DEF += -DNOT_686
     endif
   endif
 

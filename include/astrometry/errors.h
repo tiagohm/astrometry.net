@@ -54,9 +54,14 @@ ATTRIB_FORMAT(printf,4,5)
 
 void report_errno(void);
 
-#define ERROR(fmt, ...) 0 // report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__)
+/* windows.h defines ERROR as the GDI constant 0. Drop that before the logger macro. */
+#ifdef ERROR
+#undef ERROR
+#endif
 
-#define SYSERROR(fmt, ...) 0 // do { report_errno(); report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__); } while(0)
+#define ERROR(fmt, ...) report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__)
+
+#define SYSERROR(fmt, ...) do { report_errno(); report_error(__FILE__, __LINE__, __func__, fmt, ##__VA_ARGS__); } while(0)
 
 void errors_log_to(FILE* f);
 

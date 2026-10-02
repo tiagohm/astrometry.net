@@ -120,7 +120,7 @@ static int run_command(const char* cmd, anbool* ctrlc) {
     int rtn;
     logverb("Running: %s\n", cmd);
     fflush(NULL);
-    rtn = system(cmd);
+    rtn = shell_system(cmd);
     fflush(NULL);
     if (rtn == -1) {
         SYSERROR("Failed to run command \"%s\"", cmd);

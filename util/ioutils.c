@@ -3,6 +3,11 @@
  # Licensed under a 3-clause BSD style license - see LICENSE
  */
 
+#if defined(_WIN32) && !defined(__CYGWIN__)
+/* rand_s() is declared only when this is set before stdlib.h. */
+#define _CRT_RAND_S
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -32,6 +37,14 @@
 #define S_ISLNK(mode) 0
 #endif
 
+#ifndef S_ISREG
+#ifdef _S_IFREG
+#define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
+#else
+#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#endif
+#endif
+
 #ifndef F_OK
 #define F_OK 0
 #endif
@@ -52,15 +65,21 @@ static int an_is_path_separator(char c) {
 #endif
 }
 
+#if defined(_WIN32) && !defined(__CYGWIN__)
+static int an_is_drive_letter(char c) {
+    return ((c >= 'A') && (c <= 'Z')) || ((c >= 'a') && (c <= 'z'));
+}
+#endif
+
 static int an_path_is_absolute(const char* path) {
     if (!path || !path[0])
         return 0;
     if (an_is_path_separator(path[0]))
         return 1;
 #if defined(_WIN32) && !defined(__CYGWIN__)
-    if ((((path[0] >= 'A') && (path[0] <= 'Z')) ||
-         ((path[0] >= 'a') && (path[0] <= 'z'))) &&
-        (path[1] == ':'))
+    /* "C:foo" is relative to the current directory on drive C. */
+    if (an_is_drive_letter(path[0]) && (path[1] == ':') &&
+        an_is_path_separator(path[2]))
         return 1;
 #endif
     return 0;
@@ -83,8 +102,14 @@ static char* an_dirname_dup(const char* path) {
         return strdup(".");
 
     len = strlen(path);
-    while ((len > 1) && an_is_path_separator(path[len - 1]))
+    while ((len > 1) && an_is_path_separator(path[len - 1])) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+        /* Keep the root slash in "C:\". */
+        if ((len == 3) && an_is_drive_letter(path[0]) && (path[1] == ':'))
+            break;
+#endif
         len--;
+    }
 
     i = len;
     while ((i > 0) && !an_is_path_separator(path[i - 1]))
@@ -95,6 +120,23 @@ static char* an_dirname_dup(const char* path) {
 
     while ((i > 1) && an_is_path_separator(path[i - 1]))
         i--;
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    /* "C:" is the current directory on that drive, not the drive root. */
+    if ((i == 2) && an_is_drive_letter(path[0]) && (path[1] == ':')) {
+        char* root = malloc(4);
+        char sep = '\\';
+        if (!root)
+            return NULL;
+        if (an_is_path_separator(path[2]))
+            sep = path[2];
+        root[0] = path[0];
+        root[1] = ':';
+        root[2] = sep;
+        root[3] = '\0';
+        return root;
+    }
+#endif
 
     return an_strndup(path, i);
 }
@@ -150,16 +192,19 @@ static char* an_template_suffix(char* path) {
 static void an_fill_template_suffix(char* suffix, unsigned int attempt) {
     static const char chars[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    uintptr_t seed = (uintptr_t)suffix;
+    unsigned int rnd;
     int i;
 
-    seed ^= (uintptr_t)time(NULL);
-    seed ^= (uintptr_t)clock();
-    seed ^= ((uintptr_t)attempt + 1) * 1103515245u;
-
     for (i=0; i<6; i++) {
-        seed = (seed * 1664525u) + 1013904223u;
-        suffix[i] = chars[seed % (sizeof(chars) - 1)];
+        if (rand_s(&rnd) != 0) {
+            uintptr_t seed = (uintptr_t)suffix;
+            seed ^= (uintptr_t)time(NULL);
+            seed ^= (uintptr_t)clock();
+            seed ^= ((uintptr_t)attempt + (unsigned)i + 1u) * 1103515245u;
+            seed = (seed * 1664525u) + 1013904223u;
+            rnd = (unsigned int)seed;
+        }
+        suffix[i] = chars[rnd % (sizeof(chars) - 1)];
     }
 }
 #endif
@@ -594,9 +639,13 @@ int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
     char tempdir[MAX_PATH];
 
     if (!outlines && !errlines) {
-        status = system(cmd);
+        status = shell_system(cmd);
         if (status == -1) {
             SYSERROR("Failed to run command \"%s\"", cmd);
+            return -1;
+        }
+        if (WIFSIGNALED(status)) {
+            ERROR("Command was killed by signal %i", WTERMSIG(status));
             return -1;
         }
         exitval = WEXITSTATUS(status);
@@ -628,7 +677,7 @@ int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
     else
         asprintf_safe(&fullcmd, "%s 2> \"%s\"", cmd, errfn);
 
-    status = system(fullcmd);
+    status = shell_system(fullcmd);
     free(fullcmd);
     if (status == -1) {
         SYSERROR("Failed to run command \"%s\"", cmd);
@@ -652,6 +701,10 @@ int run_command_get_outputs(const char* cmd, sl** outlines, sl** errlines) {
             return -1;
     }
 
+    if (WIFSIGNALED(status)) {
+        ERROR("Command was killed by signal %i", WTERMSIG(status));
+        return -1;
+    }
     exitval = WEXITSTATUS(status);
     if (exitval)
         ERROR("Command failed: return value %i", exitval);
@@ -857,6 +910,14 @@ int mkdir_p(const char* dirpath) {
         char* dir;
         sl_push(tomake, path);
         dir = dirname_safe(path);
+        /* dirname() of a drive root is that same root. Do not walk it again. */
+        if (!dir || streq(dir, path)) {
+            free(dir);
+            free(path);
+            sl_free2(tomake);
+            ERROR("Failed to create directory \"%s\"", dirpath);
+            return -1;
+        }
         free(path);
         path = dir;
     }
@@ -876,6 +937,54 @@ int mkdir_p(const char* dirpath) {
 }
 
 char* shell_escape(const char* str) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    /* cmd.exe does not treat '\' as an escape. Wrap the argument in quotes,
+     * emit an embedded quote as "", and break '%' out of the quotes so it is
+     * not expanded. A newline would otherwise start another command.
+     * Trailing backslashes are doubled so CommandLineToArgvW keeps the
+     * closing quote. '!' is literal because shell_system() passes /v:off. */
+    size_t len = strlen(str);
+    size_t cap = len * 4 + 4;
+    char* result = malloc(cap);
+    size_t i = 0;
+    size_t j = 1;
+
+    if (!result)
+        return NULL;
+    result[0] = '"';
+    while (i < len) {
+        size_t backslashes = 0;
+        size_t k;
+        while ((i < len) && (str[i] == '\\')) {
+            backslashes++;
+            i++;
+        }
+        if (i == len) {
+            for (k = 0; k < backslashes * 2; k++)
+                result[j++] = '\\';
+            break;
+        }
+        for (k = 0; k < backslashes; k++)
+            result[j++] = '\\';
+        if (str[i] == '"') {
+            result[j++] = '"';
+            result[j++] = '"';
+        } else if (str[i] == '%') {
+            result[j++] = '"';
+            result[j++] = '%';
+            result[j++] = '"';
+        } else if ((unsigned char)str[i] < 32) {
+            result[j++] = '_';
+        } else {
+            result[j++] = str[i];
+        }
+        i++;
+    }
+    assert(j + 1 < cap);
+    result[j++] = '"';
+    result[j] = '\0';
+    return result;
+#else
     char* escape = "|&;()<> \t\n\\'\"";
     int nescape = 0;
     int len = strlen(str);
@@ -902,6 +1011,67 @@ char* shell_escape(const char* str) {
     assert(j == (len + nescape));
     result[j] = '\0';
     return result;
+#endif
+}
+
+int shell_system(const char* cmd) {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+    char* cmdline = NULL;
+    const char* comspec;
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+    DWORD code = 0;
+    DWORD err;
+
+    /* system(NULL) reports whether a command processor exists. */
+    if (!cmd)
+        return 1;
+
+    comspec = getenv("ComSpec");
+    if (!comspec || !comspec[0])
+        comspec = "cmd.exe";
+
+    /* Two spaces after /c. If the command itself starts with a quote,
+     * cmd.exe strips the first and last quote on the line. */
+    asprintf_safe(&cmdline, "\"%s\" /d /v:off /s /c  %s", comspec, cmd);
+    if (!cmdline)
+        return -1;
+
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    memset(&pi, 0, sizeof(pi));
+    if (!CreateProcessA(NULL, cmdline, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+        err = GetLastError();
+        free(cmdline);
+        if ((err == ERROR_FILE_NOT_FOUND) || (err == ERROR_PATH_NOT_FOUND))
+            errno = ENOENT;
+        else if (err == ERROR_ACCESS_DENIED)
+            errno = EACCES;
+        else
+            errno = EINVAL;
+        return -1;
+    }
+    free(cmdline);
+
+    if (WaitForSingleObject(pi.hProcess, INFINITE) != WAIT_OBJECT_0) {
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        errno = EINVAL;
+        return -1;
+    }
+    if (!GetExitCodeProcess(pi.hProcess, &code)) {
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        errno = EINVAL;
+        return -1;
+    }
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    /* Keep the bits. Ctrl-C is STATUS_CONTROL_C_EXIT (0xC000013A). */
+    return (int)code;
+#else
+    return system(cmd);
+#endif
 }
 
 static char* get_temp_dir() {
@@ -1105,7 +1275,11 @@ anbool file_readable(const char* fn) {
 
 anbool file_executable(const char* fn) {
 #if defined(_WIN32) && !defined(__CYGWIN__)
-    return file_exists(fn);
+    struct stat st;
+    /* There is no execute bit. A directory must not match a program name. */
+    if (!fn || stat(fn, &st))
+        return FALSE;
+    return S_ISREG(st.st_mode) ? TRUE : FALSE;
 #else
     return fn && (access(fn, X_OK) == 0);
 #endif
