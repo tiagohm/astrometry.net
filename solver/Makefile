@@ -116,10 +116,11 @@ ANLIBS := $(ANFILES_LIB) $(LIBKD_LIB) $(ANUTILS_LIB) $(GSL_LIB) $(QFITS_LIB)
 
 INSTALL_LIB := $(ENGINE_LIB) $(ENGINE_SO)
 
-ENGINE_OBJS := \
-		engine.o solverutils.o onefield.o solver.o quad-utils.o \
-		solvedfile.o tweak2.o \
-		verify.o tweak.o
+# Objects required to solve a field using existing index files.
+SOLVER_SO_OBJS := engine.o solverutils.o onefield.o solver.o quad-utils.o \
+		solvedfile.o tweak2.o verify.o tweak.o
+
+ENGINE_OBJS := $(SOLVER_SO_OBJS)
 
 # These are required by solve-field and friends
 ENGINE_OBJS += new-wcs.o fits-guess-scale.o cut-table.o \
@@ -130,6 +131,14 @@ BUILD_INDEX_OBJS := build-index.o uniformize-catalog.o startree.o hpquads.o \
 	unpermute-quads.o merge-index.o 
 ENGINE_OBJS += $(BUILD_INDEX_OBJS)
 
+# Keep debug information in the object files and static library, but omit it
+# from the distributed shared library.  Rebuild with STRIP_ENGINE_SO=no to
+# retain it when debugging.
+STRIP_ENGINE_SO ?= yes
+ifeq ($(STRIP_ENGINE_SO),yes)
+ENGINE_SO_STRIP_FLAG := -s
+endif
+
 #augment-xylist.o
 
 $(ENGINE_LIB): $(ENGINE_OBJS)
@@ -137,8 +146,8 @@ $(ENGINE_LIB): $(ENGINE_OBJS)
 	$(AR) rc $@ $(ENGINE_OBJS)
 	$(RANLIB) $@
 
-$(ENGINE_SO): $(ENGINE_OBJS) $(SLIB)
-	$(CC) $(LDFLAGS) $(SHAREDLIBFLAGS) -o $@ $^ $(LDLIBS)
+$(ENGINE_SO): $(SOLVER_SO_OBJS) $(ANFILES_SLIB) Makefile
+	$(CC) $(LDFLAGS) $(SHAREDLIBFLAGS) $(ENGINE_SO_STRIP_FLAG) -o $@ $(SOLVER_SO_OBJS) $(ANFILES_SLIB) $(LDLIBS)
 
 # old and miscellaneous executables that aren't part of the pipeline.
 OLDEXECS := checkquads
